@@ -1,0 +1,125 @@
+app Eigthgradeforum {
+  wasp: {
+    version: "^0.11.1"
+  },
+  title: "Eigthgradeforum",
+  client: {
+    rootComponent: import { Layout } from "@client/Layout.jsx",
+  },
+  db: {
+    prisma: {
+      clientPreviewFeatures: ["extendedWhereUnique"]
+    }
+  },
+  auth: {
+    userEntity: User,
+    methods: {
+      usernameAndPassword: {}
+    },
+    onAuthFailedRedirectTo: "/login",
+    onAuthSucceededRedirectTo: "/"
+  },
+}
+
+route LoginRoute { path: "/login", to: LoginPage }
+page LoginPage {
+  component: import Login from "@client/pages/auth/Login.jsx"
+}
+route SignupRoute { path: "/signup", to: SignupPage }
+page SignupPage {
+  component: import Signup from "@client/pages/auth/Signup.jsx"
+}
+
+entity User {=psl
+    id             Int       @id @default(autoincrement())
+    username       String    @unique
+    password       String
+    isAdmin        Boolean   @default(false)
+    isBanned       Boolean   @default(false)
+    isVerified     Boolean   @default(false)
+    profilePicture String
+    posts          Post[]
+    comments       Comment[]
+psl=}
+
+entity Post {=psl
+    id       Int       @id @default(autoincrement())
+    title    String
+    content  String
+    section  String
+    user     User      @relation(fields: [userId], references: [id])
+    userId   Int
+    comments Comment[]
+psl=}
+
+entity Comment {=psl
+    id      Int    @id @default(autoincrement())
+    content String
+    user    User   @relation(fields: [userId], references: [id])
+    userId  Int
+    post    Post   @relation(fields: [postId], references: [id])
+    postId  Int
+psl=}
+
+action banUser {
+  fn: import { banUser } from "@server/actions.js",
+  entities: [User]
+}
+
+action unbanUser {
+  fn: import { unbanUser } from "@server/actions.js",
+  entities: [User]
+}
+
+action verifyUser {
+  fn: import { verifyUser } from "@server/actions.js",
+  entities: [User]
+}
+
+action unverifyUser {
+  fn: import { unverifyUser } from "@server/actions.js",
+  entities: [User]
+}
+
+action createPost {
+  fn: import { createPost } from "@server/actions.js",
+  entities: [Post, User]
+}
+
+action createComment {
+  fn: import { createComment } from "@server/actions.js",
+  entities: [Comment, Post, User]
+}
+
+query getUser {
+  fn: import { getUser } from "@server/queries.js",
+  entities: [User]
+}
+
+query getPosts {
+  fn: import { getPosts } from "@server/queries.js",
+  entities: [Post]
+}
+
+query getComments {
+  fn: import { getComments } from "@server/queries.js",
+  entities: [Comment, Post]
+}
+
+route HomePageRoute { path: "/", to: HomePage }
+page HomePage {
+  component: import { HomePage } from "@client/pages/Home.jsx",
+  authRequired: false
+}
+
+route PostRoute { path: "/post/:postId", to: PostPage }
+page PostPage {
+  component: import { Post } from "@client/pages/Post.jsx",
+  authRequired: true
+}
+
+route AdminRoute { path: "/admin", to: AdminPage }
+page AdminPage {
+  component: import { Admin } from "@client/pages/Admin.jsx",
+  authRequired: true
+}
